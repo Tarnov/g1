@@ -1,0 +1,68 @@
+import pygame
+import random
+
+# Инициализация Pygame
+pygame.init()
+
+# Размеры окна
+WIDTH, HEIGHT = 800, 600
+win = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Сбор объектов")
+
+# Цвета
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+RED = (255, 0, 0)
+
+# Параметры игрока
+player_size = 50
+player_pos = [WIDTH // 2, HEIGHT - 2 * player_size]
+
+# Параметры объекта
+object_size = 50
+object_pos = [random.randint(0, WIDTH - object_size), 0]
+object_speed = 10
+
+# Скорость игрока
+player_speed = 20
+
+# Счёт
+score = 0
+
+# Основной цикл игры
+run = True
+clock = pygame.time.Clock()
+
+while run:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            run = False
+    
+    keys = pygame.key.get_pressed()
+    if keys[pygame.K_LEFT] and player_pos[0] > 0:
+        player_pos[0] -= player_speed
+    if keys[pygame.K_RIGHT] and player_pos[0] < WIDTH - player_size:
+        player_pos[0] += player_speed
+
+    object_pos[1] += object_speed
+    if object_pos[1] > HEIGHT:
+        object_pos = [random.randint(0, WIDTH - object_size), 0]
+        score -= 1
+
+    if player_pos[0] < object_pos[0] < player_pos[0] + player_size or player_pos[0] < object_pos[0] + object_size < player_pos[0] + player_size:
+        if player_pos[1] < object_pos[1] < player_pos[1] + player_size or player_pos[1] < object_pos[1] + object_size < player_pos[1] + player_size:
+            score += 1
+            object_pos = [random.randint(0, WIDTH - object_size), 0]
+
+    win.fill(BLACK)
+    pygame.draw.rect(win, RED, (object_pos[0], object_pos[1], object_size, object_size))
+    pygame.draw.rect(win, WHITE, (player_pos[0], player_pos[1], player_size, player_size))
+
+    font = pygame.font.SysFont("monospace", 35)
+    text = font.render("Score: " + str(score), 1, WHITE)
+    win.blit(text, (WIDTH - 200, HEIGHT - 40))
+
+    pygame.display.update()
+    clock.tick(30)
+
+pygame.quit()
