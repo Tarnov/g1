@@ -13,15 +13,22 @@ pygame.display.set_caption("Сбор объектов")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+
+# Загрузка звуков
+collect_sound = pygame.mixer.Sound('collect.wav')
+miss_sound = pygame.mixer.Sound('miss.wav')
+pygame.mixer.music.load('background.mp3')
+pygame.mixer.music.play(-1)
 
 # Параметры игрока
 player_size = 50
 player_pos = [WIDTH // 2, HEIGHT - 2 * player_size]
 
-# Параметры объекта
+# Параметры объектов
 object_size = 50
 object_pos = [random.randint(0, WIDTH - object_size), 0]
-object_speed = 10
+object_list = [{"pos": object_pos, "speed": 10, "color": RED}]
 
 # Скорость игрока
 player_speed = 20
@@ -33,29 +40,48 @@ score = 0
 run = True
 clock = pygame.time.Clock()
 
+def create_object():
+    return {"pos": [random.randint(0, WIDTH - object_size), 0], "speed": random.randint(5, 20), "color": random.choice([RED, GREEN])}
+
+def detect_collision(player_pos, object_pos):
+    p_x, p_y = player_pos
+    o_x, o_y = object_pos
+
+    if (o_x >= p_x and o_x < (p_x + player_size)) or (p_x >= o_x and p_x < (o_x + object_size)):
+        if (o_y >= p_y and o_y < (p_y + player_size)) or (p_y >= o_y and p_y < (o_y + object_size)):
+            return True
+    return False
+
 while run:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
-    
+
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT] and player_pos[0] > 0:
         player_pos[0] -= player_speed
     if keys[pygame.K_RIGHT] and player_pos[0] < WIDTH - player_size:
         player_pos[0] += player_speed
 
-    object_pos[1] += object_speed
-    if object_pos[1] > HEIGHT:
-        object_pos = [random.randint(0, WIDTH - object_size), 0]
-        score -= 1
+    # Увеличение сложности
+    if score % 5 == 0 and score != 0:
+        object_list.append(create_object())
+        score += 1  # чтобы не создавались объекты каждый кадр
 
-    if player_pos[0] < object_pos[0] < player_pos[0] + player_size or player_pos[0] < object_pos[0] + object_size < player_pos[0] + player_size:
-        if player_pos[1] < object_pos[1] < player_pos[1] + player_size or player_pos[1] < object_pos[1] + object_size < player_pos[1] + player_size:
+    for obj in object_list:
+        obj["pos"][1] += obj["speed"]
+        if obj["pos"][1] > HEIGHT:
+            object_list.remove(obj)
+            miss_sound.play()
+            score -= 1
+        if detect_collision(player_pos, obj["pos"]):
+            object_list.remove(obj)
+            collect_sound.play()
             score += 1
-            object_pos = [random.randint(0, WIDTH - object_size), 0]
 
     win.fill(BLACK)
-    pygame.draw.rect(win, RED, (object_pos[0], object_pos[1], object_size, object_size))
+    for obj in object_list:
+        pygame.draw.rect(win, obj["color"], (obj["pos"][0], obj["pos"][1], object_size, object_size))
     pygame.draw.rect(win, WHITE, (player_pos[0], player_pos[1], player_size, player_size))
 
     font = pygame.font.SysFont("monospace", 35)
